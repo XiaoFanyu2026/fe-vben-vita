@@ -1,17 +1,18 @@
 name: Notify Feishu Card On Merge Main
 
 on:
+  push:
+    branches: [ main ]
   pull_request_target:
     types: [ closed ]
-    branches:
-      - main
+    branches: [ main ]
 
 permissions:
   contents: read
 
 jobs:
   notify:
-    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    if: github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
 
     steps:
