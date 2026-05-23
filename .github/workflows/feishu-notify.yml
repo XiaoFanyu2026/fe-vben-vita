@@ -1,0 +1,40 @@
+name: Feishu GitHub Notify
+
+# 触发条件：你可以自定义要监听的事件
+on:
+  push:
+    branches: [ main ]  # 监听 main 分支的推送
+  pull_request:
+    branches: [ main ]  # 监听 PR 事件
+  issues:
+    types: [ opened, edited, closed ]  # 监听 Issue 事件
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Feishu Notify
+        uses: crazy-max/ghaction-webhook-notifier@v1
+        with:
+          # 飞书机器人 Webhook，从 Secrets 读取
+          webhook: ${{ secrets.FEISHU_WEBHOOK_URL }}
+          # 消息模板（飞书支持富文本卡片，这里给你一个通用模板）
+          content: |
+            {
+              "msg_type": "interactive",
+              "card": {
+                "config": {
+                  "wide_screen_mode": true
+                },
+                "elements": [
+                  {
+                    "div": {
+                      "text": {
+                        "content": "### 🚀 GitHub 仓库更新通知\n**事件类型：** ${{ github.event_name }}\n**触发分支：** ${{ github.ref_name }}\n**提交人：** ${{ github.actor }}\n**提交信息：** ${{ github.event.head_commit.message || github.event.pull_request.title || github.event.issue.title }}\n**查看详情：** ${{ github.event.head_commit.url || github.event.pull_request.html_url || github.event.issue.html_url }}",
+                        "tag": "lark_md"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
