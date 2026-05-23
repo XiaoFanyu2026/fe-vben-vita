@@ -6,17 +6,17 @@ on:
 jobs:
   notify:
     runs-on: ubuntu-latest
-    steps
+    steps:
       - name: 发送到飞书
         uses: fjogeleit/http-request-action@v1
         with:
-          url: '${{ secrets.FEISHU_WEBHOOK_URL }}'
+          url: ${{ secrets.FEISHU_WEBHOOK_URL }}
           method: 'POST'
           contentType: 'application/json'
           data: |
             {
               "msg_type": "text",
               "content": {
-                "text": "✅ GitHub 推送成功！\n用户：${{ github.actor }}\n分支：${{ github.ref }}\n信息：${{ github.event.head_commit.message }}"
+                "text": "✅ GitHub 推送成功！\n用户：${{ github.actor }}\n分支：${{ github.ref_name }}\n提交：${{ github.event.head_commit.message }}"
               }
             }
