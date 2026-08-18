@@ -10,7 +10,12 @@ import { resetAllStores, useAccessStore, useUserStore } from '@vben/stores';
 import { ElNotification } from 'element-plus';
 import { defineStore } from 'pinia';
 
-import { getAccessCodesApi, getUserInfoApi, loginApi, logoutApi } from '#/api';
+import {
+  getAuthInfoApi,
+  loginApi,
+  logoutApi,
+  mapAuthInfoToUserInfo,
+} from '#/api';
 import { $t } from '#/locales';
 
 export const useAuthStore = defineStore('auth', () => {
@@ -33,23 +38,19 @@ export const useAuthStore = defineStore('auth', () => {
     let userInfo: null | UserInfo = null;
     try {
       loginLoading.value = true;
-      const { accessToken } = await loginApi(params);
+      const { tokenValue } = await loginApi(params);
 
       // 如果成功获取到 accessToken
-      if (accessToken) {
+      if (tokenValue) {
         // 将 accessToken 存储到 accessStore 中
-        accessStore.setAccessToken(accessToken);
+        accessStore.setAccessToken(tokenValue);
 
-        // 获取用户信息并存储到 accessStore 中
-        const [fetchUserInfoResult, accessCodes] = await Promise.all([
-          fetchUserInfo(),
-          getAccessCodesApi(),
-        ]);
-
-        userInfo = fetchUserInfoResult;
+        // 后端通过一个接口同时返回用户、角色和权限。
+        const authInfo = await getAuthInfoApi();
+        userInfo = mapAuthInfoToUserInfo(authInfo);
 
         userStore.setUserInfo(userInfo);
-        accessStore.setAccessCodes(accessCodes);
+        accessStore.setAccessCodes(authInfo.permissionCodes || []);
 
         if (accessStore.loginExpired) {
           accessStore.setLoginExpired(false);
@@ -69,6 +70,10 @@ export const useAuthStore = defineStore('auth', () => {
           });
         }
       }
+    } catch (error) {
+      // 登录成功但初始化用户信息失败时不能保留半完成的登录状态。
+      accessStore.setAccessToken(null);
+      throw error;
     } finally {
       loginLoading.value = false;
     }
@@ -99,8 +104,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function fetchUserInfo() {
-    const userInfo = await getUserInfoApi();
+    const authInfo = await getAuthInfoApi();
+    const userInfo = mapAuthInfoToUserInfo(authInfo);
     userStore.setUserInfo(userInfo);
+    accessStore.setAccessCodes(authInfo.permissionCodes || []);
     return userInfo;
   }
 
